@@ -1,12 +1,8 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
 import os
 from flask import Flask, request, jsonify, url_for
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from datastructures import FamilyStructure
-#from models import Person
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -26,19 +22,55 @@ def sitemap():
     return generate_sitemap(app)
 
 @app.route('/members', methods=['GET'])
-def handle_hello():
-
-    # this is how you can use the Family datastructure by calling its methods
+def get_all_members():
     members = jackson_family.get_all_members()
-    response_body = {
-        "hello": "world",
-        "family": members
+    return jsonify(members), 200
+
+@app.route('/member', methods=['POST'])
+def new_member():
+    body = request.json  # Extraer el cuerpo de la solicitud
+
+    # Validar que todos los campos obligatorios estén presentes
+    if 'first_name' not in body:
+        return jsonify({'msg': 'El campo first_name es obligatorio'}), 400
+    if 'age' not in body:
+        return jsonify({'msg': 'El campo age es obligatorio'}), 400
+    if 'lucky_numbers' not in body:
+        return jsonify({'msg': 'El campo lucky_numbers es obligatorio'}), 400
+
+    # Crear un nuevo miembro con los datos proporcionados
+    new_member = {
+        'id': body.get('id', jackson_family._generateId()),  # Usar el ID proporcionado o generar uno nuevo
+        'first_name': body['first_name'],
+        'last_name': jackson_family.last_name,  # Usar el apellido de la familia
+        'age': body['age'],
+        'lucky_numbers': body['lucky_numbers']
     }
 
+    # Agregar el nuevo miembro a la familia
+    all_members = jackson_family.add_member(new_member)
 
-    return jsonify(response_body), 200
+    # Responder con el mensaje de éxito y la lista de miembros actualizada
+    return jsonify({'msg': 'ok', 'members': all_members}), 200
 
-# this only runs if `$ python src/app.py` is executed
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    member = jackson_family.get_member(member_id)
+    if member:
+        return jsonify(member), 200
+    return jsonify({"error": "Member not found"}), 404
+
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    # Eliminar el miembro de la estructura de datos
+    success = jackson_family.delete_member(member_id)
+
+    # Verificar si se eliminó con éxito
+    if success:
+        return jsonify({"done": True}), 200
+    else:
+        return jsonify({"error": "Member not found"}), 404
+
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=True)
