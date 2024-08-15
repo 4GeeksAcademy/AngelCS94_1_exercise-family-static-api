@@ -8,15 +8,15 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 CORS(app)
 
-# create the jackson family object
+
 jackson_family = FamilyStructure("Jackson")
 
-# Handle/serialize errors like a JSON object
+
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
-# generate sitemap with all your endpoints
+
 @app.route('/')
 def sitemap():
     return generate_sitemap(app)
@@ -28,9 +28,9 @@ def get_all_members():
 
 @app.route('/member', methods=['POST'])
 def new_member():
-    body = request.json  # Extraer el cuerpo de la solicitud
+    body = request.json  
 
-    # Validar que todos los campos obligatorios estén presentes
+    
     if 'first_name' not in body:
         return jsonify({'msg': 'El campo first_name es obligatorio'}), 400
     if 'age' not in body:
@@ -38,19 +38,18 @@ def new_member():
     if 'lucky_numbers' not in body:
         return jsonify({'msg': 'El campo lucky_numbers es obligatorio'}), 400
 
-    # Crear un nuevo miembro con los datos proporcionados
+    
     new_member = {
-        'id': body.get('id', jackson_family._generateId()),  # Usar el ID proporcionado o generar uno nuevo
+        'id': body.get('id', jackson_family._generateId()),  
         'first_name': body['first_name'],
-        'last_name': jackson_family.last_name,  # Usar el apellido de la familia
-        'age': body['age'],
+        'last_name': jackson_family.last_name,  
         'lucky_numbers': body['lucky_numbers']
     }
 
-    # Agregar el nuevo miembro a la familia
+    
     all_members = jackson_family.add_member(new_member)
 
-    # Responder con el mensaje de éxito y la lista de miembros actualizada
+    
     return jsonify({'msg': 'ok', 'members': all_members}), 200
 
 @app.route('/member/<int:member_id>', methods=['GET'])
@@ -62,10 +61,10 @@ def get_member(member_id):
 
 @app.route('/member/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
-    # Eliminar el miembro de la estructura de datos
+    
     success = jackson_family.delete_member(member_id)
 
-    # Verificar si se eliminó con éxito
+   
     if success:
         return jsonify({"done": True}), 200
     else:
